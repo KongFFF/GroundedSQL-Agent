@@ -98,7 +98,7 @@ GroundedSQL-Agent/
 2. `user`：输入内容为 **v6 schema 表示 + 自然语言问题**
 3. `assistant`：目标 SQL
 
-其中，`v6 schema` 不是简单的 `CREATE TABLE` 平铺文本，而是由 `build_schema_dict_v6(...)` 构造的 **中文半结构化 schema 表示**，其特点包括：
+其中，`v6 schema` 是由 `build_schema_dict_v6(...)` 构造的 **中文半结构化 schema 表示**，其特点包括：
 
 - 以数据库为单位组织
 - 显式写出表与字段
@@ -128,8 +128,6 @@ GroundedSQL-Agent/
 - `use_rslora = false`
 - `inference_mode = true`（当前公开权重用于推理加载）
 
-这意味着最终公开版本采用的是一组**较高 rank、无 dropout 的标准 LoRA 适配器配置**，重点追求在 Spider 文本到 SQL 任务上的稳定拟合能力，而不是进一步叠加 DoRA / QALoRA / RSLoRA 等额外变体。
-
 **输入与推理配置**
 
 - 推理输入格式：`system prompt + v6 schema + question`
@@ -142,17 +140,15 @@ GroundedSQL-Agent/
 
 - `base_model_name_or_path = /root/autodl-tmp/qwen2.5-coder-7b-instruct`
 - 最终 LoRA 权重在该基座模型上加载
-- 当前公开仓库不包含 adapter 权重文件本体，但保留完整的加载路径、推理代码与实验命令
+- 当前仓库不包含 adapter 权重文件本体，但保留完整的加载路径、推理代码与实验命令
 
-仓库中保留的历史训练记录还显示，项目在多个版本中持续采用 LoRA 监督微调范式，并围绕以下维度做过系统试验：
+项目在多个版本中持续采用 LoRA 监督微调范式，并围绕以下维度做过系统试验：
 
 - schema 表达格式（`v1 / v3 / v5 / v6`）
 - LoRA rank / alpha
 - 是否使用 DoRA
 - 上下文长度（如 `2048 / 3072 / 4096`）
 - 数据集版本（如 `spider_sql / spider_golden / spider_v5`）
-
-对外公开时，本项目重点展示的是最终用于正式系统推理的 **`qwen_spider_lora_v6`** 及其对应的数据格式与完整实验结果，而不是将所有历史训练权重一并托管到仓库中。
 
 ## 4. 运行方式
 
@@ -362,12 +358,6 @@ python scripts/analysis/build_explainability_dashboard.py \
 - 正式最优基线：**79.3**
 - 去掉 value grounding：**75.4**
 
-也就是说，本项目的关键提升并不只是“多给一些 prompt 信息”，而是让系统在值层面具备：
-
-- 值到列的更可靠绑定
-- 实体名 / 代码值 / 枚举值的更合理解释
-- 条件 literal 的更稳定落列
-
 ### 6.2 结构化专项路线是有效支线，但不是总增益主来源
 
 项目中保留了一条针对 superlative / count-family 子任务的高精度结构化路线。  
@@ -377,7 +367,7 @@ python scripts/analysis/build_explainability_dashboard.py \
 - retrieval 子图构建
 - 保守的 semantic risk control
 
-### 6.3 最终公开基线强调“收敛”和“稳健”
+### 6.3 最终公开基线
 
 在开发过程中，一些看起来更复杂的设计并没有稳定提升结果，例如：
 
@@ -396,8 +386,7 @@ python scripts/analysis/build_explainability_dashboard.py \
 
 ## 7. 项目价值
 
-GroundedSQL-Agent 并不是一个单纯的 prompt engineering 结果，也不是一个只追求 benchmark 数字的脚本集合。  
-它更像是一个围绕真实数据库执行闭环展开的系统研究项目，展示了如何从：
+GroundedSQL-Agent 是一个围绕真实数据库执行闭环展开的系统研究项目，展示了如何从：
 
 - 一个纯微调的 SQL 生成模型
 
@@ -412,24 +401,10 @@ GroundedSQL-Agent 并不是一个单纯的 prompt engineering 结果，也不是
 
 ---
 
-## 8. 说明
+## 8. 使用建议
 
-- 项目内部研发笔记与保研材料并未全部公开，公开仓库只保留适合对外展示的代码与文档。
-- `docs/` 目录建议用于放置整理后的外部展示材料，而不是原始开发记录。
-- 某些官方评测依赖（如 `sqlparse`、NLTK 分词环境）需要在本地 Python 环境中自行准备。
-
----
-
-## 9. 使用建议
-
-如果保研老师或项目评审希望快速理解本项目，建议优先查看以下入口：
+如果希望快速理解本项目，建议优先查看以下入口：
 
 - 纯模型 / 纯微调模型评测：`finetune_tools/main_eval.py`
 - 正式 Agent 评测入口：`main_eval_agent.py`
 - 可解释性网页生成：`scripts/analysis/build_explainability_dashboard.py`
-
-如果需要展示项目整体能力，最推荐直接提供：
-
-- 本仓库链接
-- `formal_final` 对应的正式基线实验结果
-- 对应的 explainability dashboard 页面
